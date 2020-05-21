@@ -1,11 +1,8 @@
-# Ionic Calculator
+These are Cordova resources. You can replace icon.png and splash.png and run
+`ionic cordova resources` to generate custom icons and splash screens for your
+app. See `ionic cordova resources --help` for details.
 
-This app is a sample and simple calculator app developed in the Ionic framwork.
+Cordova reference documentation:
 
-## System Requirements
-
-To work in this repo normally, some programs/framweorks are needed:
-
-* Node.js (v12.16.3)
-* @ionic/cli (v6.9.2)
-* cordova (v9.0.0)
+- Icons: https://cordova.apache.org/docs/en/latest/config_ref/images.html
+- Splash Screens: https://cordova.apache.org/docs/en/latest/reference/cordova-plugin-splashscreen/
