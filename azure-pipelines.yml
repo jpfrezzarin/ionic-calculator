@@ -9,12 +9,27 @@ trigger:
 pool:
   vmImage: 'ubuntu-18.04'
 
+variables:
+  nodeVersion: '12.x'
+  angularVersion: '9.1.2'
+
 steps:
+
 - task: NodeTool@0
-  displayName: use node 12.x
+  displayName: use node $(nodeVersion)
   inputs:
-    versionSpec: '12.x'
+    versionSpec: '$(nodeVersion)'
+
 - task: Npm@1
   displayName: npm install
   inputs:
     command: 'install'
+
+- task: Npm@1
+  inputs:
+    command: 'custom'
+    customCommand: 'install angular@$(angularVersion)'
+    
+- task: CmdLine@2
+  inputs:
+    script: 'ng test --watch=false --code-coverage --browsers=ChromeHeadless'
