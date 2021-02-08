@@ -10,7 +10,7 @@ pool:
   vmImage: 'ubuntu-18.04'
 
 variables:
-  nodeVersion: '12.x'
+  nodeVersion: '10.x'
   angularVersion: '9.1.2'
 
 steps:
