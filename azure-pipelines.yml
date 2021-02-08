@@ -10,7 +10,7 @@ pool:
   vmImage: 'ubuntu-18.04'
 
 variables:
-  nodeVersion: '10.x'
+  nodeVersion: '12.x'
   angularVersion: '9.1.2'
 
 steps:
@@ -29,7 +29,7 @@ steps:
   displayName: npm install angular $(angularVersion)
   inputs:
     command: 'custom'
-    customCommand: 'install -g angular@$(angularVersion)'
+    customCommand: 'install -g @angular/cli@$(angularVersion)'
     
 - task: CmdLine@2
   displayName: ng test
