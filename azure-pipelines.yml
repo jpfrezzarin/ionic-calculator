@@ -26,10 +26,12 @@ steps:
     command: 'install'
 
 - task: Npm@1
+  displayName: npm install angular $(angularVersion)
   inputs:
     command: 'custom'
-    customCommand: 'install angular@$(angularVersion)'
+    customCommand: 'install -g angular@$(angularVersion)'
     
 - task: CmdLine@2
+  displayName: ng test
   inputs:
     script: 'ng test --watch=false --code-coverage --browsers=ChromeHeadless'
