@@ -25,16 +25,22 @@ steps:
   inputs:
     command: 'install'
 
-- task: Npm@1
-  displayName: npm install angular $(angularVersion)
-  inputs:
-    command: 'custom'
-    customCommand: 'install -g @angular/cli@$(angularVersion)'
+# - task: Npm@1
+#   displayName: npm install angular $(angularVersion)
+#   inputs:
+#     command: 'custom'
+#     customCommand: 'install -g @angular/cli@$(angularVersion)'
     
-- task: CmdLine@2
-  displayName: ng test
+# - task: CmdLine@2
+#   displayName: ng test
+#   inputs:
+#     script: 'ng test --watch=false --code-coverage --browsers=ChromeHeadless'
+
+- task: AngularCLI@1
   inputs:
-    script: 'ng test --watch=false --code-coverage --browsers=ChromeHeadless'
+    command: 'test'
+    arguments: '--watch=false --code-coverage --browsers=ChromeHeadless'
+    DisableAnalytics: false
 
 - task: SonarCloudPrepare@1
   displayName: sonar prepare
