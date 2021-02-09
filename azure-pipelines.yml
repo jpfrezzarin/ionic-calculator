@@ -35,3 +35,32 @@ steps:
   displayName: ng test
   inputs:
     script: 'ng test --watch=false --code-coverage --browsers=ChromeHeadless'
+
+- task: SonarCloudPrepare@1
+  displayName: sonar prepare
+  inputs:
+    SonarCloud: 'jpfrezzarin-sonarcloud'
+    organization: 'jpfrezzarin'
+    scannerMode: 'CLI'
+    configMode: 'manual'
+    cliProjectKey: 'jpfrezzarin.ionic-calculator'
+    cliProjectName: 'Ionic Calculator'
+    cliProjectVersion: '$(Build.BuildNumber)'
+    cliSources: '.'
+    extraProperties: |
+      sonar.tests=.
+      sonar.exclusions=**/platforms/**,**/plugins/**,**/resources/**,**/node_modules/**,**/coverage/**,**/dist/**
+      sonar.test.inclusions=**/*spec.ts
+      sonar.ts.tslintconfigpath=tslint.json
+      sonar.ts.lcov.reportpath=coverage/lcov.info
+      sonar.typescript.lcov.reportPaths=coverage/lcov.info
+      sonar.typescript.exclusions=**/node_modules/**,**/*routing.module.ts,**/*conf.js,**/*test.ts
+      # sonar.verbose=true
+
+- task: SonarCloudAnalyze@1
+  displayName: sonar analyze
+
+- task: SonarCloudPublish@1
+  displayName: sonar publish
+  inputs:
+    pollingTimeoutSec: '300'
