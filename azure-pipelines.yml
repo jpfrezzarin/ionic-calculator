@@ -93,15 +93,16 @@ stages:
         - task: IonicCommand@1
           displayName: ionic build android
           inputs:
-            ionicCommand: 'cordova platforms add android'
+            ionicCommand: 'cordova build android'
             ionicVersion: '$(ionicVersion)'
             cordovaVersion: '$(cordovaVersion)'
 
         - task: CopyFiles@2
           displayName: copy *.apk
           inputs:
-            Contents: '**/*.apk'
+            Contents: 'platforms/android/**/*.apk'
             TargetFolder: '$(Build.ArtifactStagingDirectory)'
+            flattenFolders: true
 
         - task: PublishBuildArtifacts@1
           displayName: publish artifacts
