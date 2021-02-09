@@ -11,52 +11,101 @@ pool:
 
 variables:
   nodeVersion: '12.x'
-  angularVersion: '9.1.2'
+  ionicVersion: '5.4.16'
+  cordovaVersion: '9.0.0'
 
-steps:
+stages:
+  - stage: qa
+    displayName: quality
+    jobs:
+      - job: qa
+        displayName: quality
+        steps:
+        - task: NodeTool@0
+          displayName: use node $(nodeVersion)
+          inputs:
+            versionSpec: '$(nodeVersion)'
 
-- task: NodeTool@0
-  displayName: use node $(nodeVersion)
-  inputs:
-    versionSpec: '$(nodeVersion)'
+        - task: Npm@1
+          displayName: npm install
+          inputs:
+            command: 'install'
 
-- task: Npm@1
-  displayName: npm install
-  inputs:
-    command: 'install'
+        - task: AngularCLI@1
+          displayName: ng test
+          inputs:
+            command: 'test'
+            arguments: '--watch=false --code-coverage --browsers=ChromeHeadless'
+            DisableAnalytics: true
 
-- task: AngularCLI@1
-  displayName: ng test
-  inputs:
-    command: 'test'
-    arguments: '--watch=false --code-coverage --browsers=ChromeHeadless'
-    DisableAnalytics: true
+        - task: SonarCloudPrepare@1
+          displayName: sonar prepare
+          inputs:
+            SonarCloud: 'jpfrezzarin-sonarcloud'
+            organization: 'jpfrezzarin'
+            scannerMode: 'CLI'
+            configMode: 'manual'
+            cliProjectKey: 'jpfrezzarin.ionic-calculator'
+            cliProjectName: 'Ionic Calculator'
+            cliProjectVersion: '$(Build.BuildNumber)'
+            cliSources: '.'
+            extraProperties: |
+              sonar.tests=.
+              sonar.exclusions=**/platforms/**,**/plugins/**,**/resources/**,**/node_modules/**,**/coverage/**,**/dist/**
+              sonar.test.inclusions=**/*spec.ts
+              sonar.ts.tslintconfigpath=tslint.json
+              sonar.ts.lcov.reportpath=coverage/lcov.info
+              sonar.javascript.lcov.reportPaths=coverage/lcov.info
+              sonar.typescript.exclusions=**/node_modules/**,**/*routing.module.ts,**/*conf.js,**/*test.ts
+              # sonar.verbose=true
 
-- task: SonarCloudPrepare@1
-  displayName: sonar prepare
-  inputs:
-    SonarCloud: 'jpfrezzarin-sonarcloud'
-    organization: 'jpfrezzarin'
-    scannerMode: 'CLI'
-    configMode: 'manual'
-    cliProjectKey: 'jpfrezzarin.ionic-calculator'
-    cliProjectName: 'Ionic Calculator'
-    cliProjectVersion: '$(Build.BuildNumber)'
-    cliSources: '.'
-    extraProperties: |
-      sonar.tests=.
-      sonar.exclusions=**/platforms/**,**/plugins/**,**/resources/**,**/node_modules/**,**/coverage/**,**/dist/**
-      sonar.test.inclusions=**/*spec.ts
-      sonar.ts.tslintconfigpath=tslint.json
-      sonar.ts.lcov.reportpath=coverage/lcov.info
-      sonar.javascript.lcov.reportPaths=coverage/lcov.info
-      sonar.typescript.exclusions=**/node_modules/**,**/*routing.module.ts,**/*conf.js,**/*test.ts
-      # sonar.verbose=true
+        - task: SonarCloudAnalyze@1
+          displayName: sonar analyze
 
-- task: SonarCloudAnalyze@1
-  displayName: sonar analyze
+        - task: SonarCloudPublish@1
+          displayName: sonar publish
+          inputs:
+            pollingTimeoutSec: '300'
 
-- task: SonarCloudPublish@1
-  displayName: sonar publish
-  inputs:
-    pollingTimeoutSec: '300'
+  - stage: build
+    displayName: build and publish
+    jobs:
+      - job: build_android
+        displayName: build android
+        steps:
+        - task: NodeTool@0
+          displayName: use node $(nodeVersion)
+          inputs:
+            versionSpec: '$(nodeVersion)'
+
+        - task: Npm@1
+          displayName: npm install
+          inputs:
+            command: 'install'
+
+        - task: IonicCommand@1
+          displayName: ionic platforms add android
+          inputs:
+            ionicCommand: 'cordova platforms add android'
+            ionicVersion: '$(ionicVersion)'
+            cordovaVersion: '$(cordovaVersion)'
+
+        - task: IonicCommand@1
+          displayName: ionic build android
+          inputs:
+            ionicCommand: 'cordova platforms add android'
+            ionicVersion: '$(ionicVersion)'
+            cordovaVersion: '$(cordovaVersion)'
+
+        - task: CopyFiles@2
+          displayName: copy *.apk
+          inputs:
+            Contents: '**/*.apk'
+            TargetFolder: '$(Build.ArtifactStagingDirectory)'
+
+        - task: PublishBuildArtifacts@1
+          displayName: publish artifacts
+          inputs:
+            PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+            ArtifactName: 'drop'
+            publishLocation: 'Container'
