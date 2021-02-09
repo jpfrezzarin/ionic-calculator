@@ -6,6 +6,13 @@
 trigger:
 - master
 
+resources:
+  repositories:
+  - repository: templates
+    type: github
+    endpoint: jpfrezzarin
+    name: jpfrezzarin/azure-pipeline-templates
+
 pool:
   vmImage: 'ubuntu-18.04'
 
@@ -18,95 +25,39 @@ stages:
   - stage: qa
     displayName: quality
     jobs:
-      - job: qa
-        displayName: quality
+      - job: unit_test_and_sonar
+        displayName: unit test and sonarcloud
         steps:
-        - task: NodeTool@0
-          displayName: use node $(nodeVersion)
-          inputs:
-            versionSpec: '$(nodeVersion)'
+        - template: ionic/ionic-unit-test-with-sonar.yml@templates
+          parameters:
+            nodeVersion: '$(nodeVersion)'
+            sonarEndpoint: 'jpfrezzarin-sonarcloud'
+            sonarOrganization: 'jpfrezzarin'
+            sonarProjectKey: 'jpfrezzarin.ionic-calculator'
+            sonarProjectName: 'Ionic Calculator'
 
-        - task: Npm@1
-          displayName: npm install
-          inputs:
-            command: 'install'
-
-        - task: AngularCLI@1
-          displayName: ng test
-          inputs:
-            command: 'test'
-            arguments: '--watch=false --code-coverage --browsers=ChromeHeadless'
-            DisableAnalytics: true
-
-        - task: SonarCloudPrepare@1
-          displayName: sonar prepare
-          inputs:
-            SonarCloud: 'jpfrezzarin-sonarcloud'
-            organization: 'jpfrezzarin'
-            scannerMode: 'CLI'
-            configMode: 'manual'
-            cliProjectKey: 'jpfrezzarin.ionic-calculator'
-            cliProjectName: 'Ionic Calculator'
-            cliProjectVersion: '$(Build.BuildNumber)'
-            cliSources: '.'
-            extraProperties: |
-              sonar.tests=.
-              sonar.exclusions=**/platforms/**,**/plugins/**,**/resources/**,**/node_modules/**,**/coverage/**,**/dist/**
-              sonar.test.inclusions=**/*spec.ts
-              sonar.ts.tslintconfigpath=tslint.json
-              sonar.ts.lcov.reportpath=coverage/lcov.info
-              sonar.javascript.lcov.reportPaths=coverage/lcov.info
-              sonar.typescript.exclusions=**/node_modules/**,**/*routing.module.ts,**/*conf.js,**/*test.ts
-              # sonar.verbose=true
-
-        - task: SonarCloudAnalyze@1
-          displayName: sonar analyze
-
-        - task: SonarCloudPublish@1
-          displayName: sonar publish
-          inputs:
-            pollingTimeoutSec: '300'
-
-  - stage: build
-    displayName: build and publish
+  - stage: build_android
+    displayName: build and publish - android
+    dependsOn: qa
     jobs:
-      - job: build_android
-        displayName: build android
+      - job: build_android_dev
+        displayName: build and publish android dev
         steps:
-        - task: NodeTool@0
-          displayName: use node $(nodeVersion)
-          inputs:
-            versionSpec: '$(nodeVersion)'
-
-        - task: Npm@1
-          displayName: npm install
-          inputs:
-            command: 'install'
-
-        - task: IonicCommand@1
-          displayName: ionic platforms add android
-          inputs:
-            ionicCommand: 'cordova platforms add android'
+        - template: ionic/ionic-build-publish-android.yml@templates
+          parameters:
+            nodeVersion: '$(nodeVersion)'
             ionicVersion: '$(ionicVersion)'
             cordovaVersion: '$(cordovaVersion)'
+            artifactName: 'android-dev'
 
-        - task: IonicCommand@1
-          displayName: ionic build android
-          inputs:
-            ionicCommand: 'cordova build android'
+      - job: build_android_prd
+        displayName:  build and publish android prd
+        dependsOn: build_android_dev
+        steps:
+        - template: ionic/ionic-build-publish-android.yml@templates
+          parameters:
+            nodeVersion: '$(nodeVersion)'
             ionicVersion: '$(ionicVersion)'
             cordovaVersion: '$(cordovaVersion)'
-
-        - task: CopyFiles@2
-          displayName: copy *.apk
-          inputs:
-            Contents: 'platforms/android/**/*.apk'
-            TargetFolder: '$(Build.ArtifactStagingDirectory)'
-            flattenFolders: true
-
-        - task: PublishBuildArtifacts@1
-          displayName: publish artifacts
-          inputs:
-            PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-            ArtifactName: 'drop'
-            publishLocation: 'Container'
+            buildConfiguration: 'release'
+            artifactName: 'android-prd'
